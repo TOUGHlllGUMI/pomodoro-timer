@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ポモドーロタイマー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --focus-color: #e07a5f;
+    --break-color: #4f9d69;
+    --bg: #f7f3ee;
+    --card-bg: #ffffff;
+    --text: #33302e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    transition: background 0.6s ease;
+    padding: 24px;
+  }
+
+  body.break-mode {
+    background: #eaf3ec;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: clamp(24px, 6vw, 48px);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  h1 {
+    font-size: clamp(20px, 5vw, 28px);
+    font-weight: 900;
+    margin: 0 0 8px;
+  }
+
+  .mode-label {
+    display: inline-block;
+    padding: 6px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: clamp(14px, 3vw, 16px);
+    color: #fff;
+    background: var(--focus-color);
+    margin-bottom: 24px;
+    transition: background 0.4s ease;
+  }
+
+  body.break-mode .mode-label {
+    background: var(--break-color);
+  }
+
+  .time {
+    font-size: clamp(56px, 18vw, 96px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    margin: 8px 0 28px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: clamp(15px, 4vw, 17px);
+    font-weight: 700;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 28px;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  button:active {
+    transform: scale(0.96);
+  }
+
+  #startPauseBtn {
+    background: var(--focus-color);
+    color: #fff;
+  }
+
+  body.break-mode #startPauseBtn {
+    background: var(--break-color);
+  }
+
+  #resetBtn {
+    background: #eee;
+    color: var(--text);
+  }
+
+  .count {
+    margin-top: 24px;
+    font-size: clamp(13px, 3vw, 15px);
+    color: #777;
+  }
+
+  .count strong {
+    color: var(--text);
+    font-size: 1.1em;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>ポモドーロタイマー</h1>
+    <div class="mode-label" id="modeLabel">集中時間</div>
+    <div class="time" id="timeDisplay">25:00</div>
+    <div class="controls">
+      <button id="startPauseBtn">スタート</button>
+      <button id="resetBtn">リセット</button>
+    </div>
+    <div class="count">完了した集中セッション: <strong id="sessionCount">0</strong> 回</div>
+  </div>
+
+<script>
+  const FOCUS_SECONDS = 25 * 60;
+  const BREAK_SECONDS = 5 * 60;
+
+  const timeDisplay = document.getElementById('timeDisplay');
+  const modeLabel = document.getElementById('modeLabel');
+  const startPauseBtn = document.getElementById('startPauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const sessionCountEl = document.getElementById('sessionCount');
+
+  let remaining = FOCUS_SECONDS;
+  let isBreak = false;
+  let isRunning = false;
+  let timerId = null;
+  let sessionCount = 0;
+
+  function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function render() {
+    timeDisplay.textContent = formatTime(remaining);
+    modeLabel.textContent = isBreak ? '休憩時間' : '集中時間';
+    document.body.classList.toggle('break-mode', isBreak);
+    startPauseBtn.textContent = isRunning ? '一時停止' : 'スタート';
+    sessionCountEl.textContent = sessionCount;
+    document.title = `${formatTime(remaining)} - ${isBreak ? '休憩中' : '集中中'}`;
+  }
+
+  function notify(message) {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    new Notification('ポモドーロタイマー', { body: message });
+  }
+
+  function switchMode() {
+    if (!isBreak) {
+      sessionCount += 1;
+    }
+    isBreak = !isBreak;
+    remaining = isBreak ? BREAK_SECONDS : FOCUS_SECONDS;
+    notify(isBreak ? 'お疲れさまでした。休憩時間です。' : '休憩終了です。集中時間を始めましょう。');
+  }
+
+  function tick() {
+    remaining -= 1;
+    if (remaining <= 0) {
+      switchMode();
+    }
+    render();
+  }
+
+  function start() {
+    if (isRunning) return;
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    isRunning = true;
+    timerId = setInterval(tick, 1000);
+    render();
+  }
+
+  function pause() {
+    isRunning = false;
+    clearInterval(timerId);
+    render();
+  }
+
+  function reset() {
+    pause();
+    isBreak = false;
+    remaining = FOCUS_SECONDS;
+    render();
+  }
+
+  startPauseBtn.addEventListener('click', () => {
+    isRunning ? pause() : start();
+  });
+
+  resetBtn.addEventListener('click', reset);
+
+  render();
+</script>
+</body>
+</html>
