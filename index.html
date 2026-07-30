@@ -97,6 +97,11 @@
     transform: scale(0.96);
   }
 
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   #startPauseBtn {
     background: var(--focus-color);
     color: #fff;
@@ -121,6 +126,42 @@
     color: var(--text);
     font-size: 1.1em;
   }
+
+  .target-row {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: clamp(13px, 3vw, 15px);
+    color: #777;
+  }
+
+  .target-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    background: #eee;
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .target-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  #targetValue {
+    min-width: 1.5em;
+    font-weight: 700;
+    color: var(--text);
+    font-size: 1.1em;
+  }
 </style>
 </head>
 <body>
@@ -132,7 +173,13 @@
       <button id="startPauseBtn">スタート</button>
       <button id="resetBtn">リセット</button>
     </div>
-    <div class="count">完了した集中セッション: <strong id="sessionCount">0</strong> 回</div>
+    <div class="count">完了した集中セッション: <strong id="sessionCount">0</strong> / <span id="targetDisplay">4</span> 回</div>
+    <div class="target-row">
+      <span>目標回数</span>
+      <button class="target-btn" id="targetMinus" type="button">−</button>
+      <span id="targetValue">4</span>
+      <button class="target-btn" id="targetPlus" type="button">+</button>
+    </div>
   </div>
 
 <script>
@@ -144,12 +191,21 @@
   const startPauseBtn = document.getElementById('startPauseBtn');
   const resetBtn = document.getElementById('resetBtn');
   const sessionCountEl = document.getElementById('sessionCount');
+  const targetDisplay = document.getElementById('targetDisplay');
+  const targetValue = document.getElementById('targetValue');
+  const targetMinus = document.getElementById('targetMinus');
+  const targetPlus = document.getElementById('targetPlus');
+
+  const MIN_TARGET = 1;
+  const MAX_TARGET = 12;
 
   let remaining = FOCUS_SECONDS;
   let isBreak = false;
   let isRunning = false;
   let timerId = null;
   let sessionCount = 0;
+  let targetSessions = 4;
+  let goalReached = false;
 
   function formatTime(totalSeconds) {
     const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -158,12 +214,19 @@
   }
 
   function render() {
-    timeDisplay.textContent = formatTime(remaining);
-    modeLabel.textContent = isBreak ? '休憩時間' : '集中時間';
+    timeDisplay.textContent = goalReached ? '🎉' : formatTime(remaining);
+    modeLabel.textContent = goalReached ? '目標達成!' : (isBreak ? '休憩時間' : '集中時間');
     document.body.classList.toggle('break-mode', isBreak);
     startPauseBtn.textContent = isRunning ? '一時停止' : 'スタート';
+    startPauseBtn.disabled = goalReached;
     sessionCountEl.textContent = sessionCount;
-    document.title = `${formatTime(remaining)} - ${isBreak ? '休憩中' : '集中中'}`;
+    targetDisplay.textContent = targetSessions;
+    targetValue.textContent = targetSessions;
+    targetMinus.disabled = targetSessions <= MIN_TARGET || isRunning;
+    targetPlus.disabled = targetSessions >= MAX_TARGET || isRunning;
+    document.title = goalReached
+      ? '目標達成! - ポモドーロタイマー'
+      : `${formatTime(remaining)} - ${isBreak ? '休憩中' : '集中中'}`;
   }
 
   function notify(message) {
@@ -174,6 +237,13 @@
   function switchMode() {
     if (!isBreak) {
       sessionCount += 1;
+      if (sessionCount >= targetSessions) {
+        goalReached = true;
+        remaining = 0;
+        pause();
+        notify(`目標の${targetSessions}回、お疲れさまでした!`);
+        return;
+      }
     }
     isBreak = !isBreak;
     remaining = isBreak ? BREAK_SECONDS : FOCUS_SECONDS;
@@ -208,6 +278,16 @@
     pause();
     isBreak = false;
     remaining = FOCUS_SECONDS;
+    sessionCount = 0;
+    goalReached = false;
+    render();
+  }
+
+  function changeTarget(delta) {
+    if (isRunning) return;
+    const next = targetSessions + delta;
+    if (next < MIN_TARGET || next > MAX_TARGET) return;
+    targetSessions = next;
     render();
   }
 
@@ -216,6 +296,8 @@
   });
 
   resetBtn.addEventListener('click', reset);
+  targetMinus.addEventListener('click', () => changeTarget(-1));
+  targetPlus.addEventListener('click', () => changeTarget(1));
 
   render();
 </script>
