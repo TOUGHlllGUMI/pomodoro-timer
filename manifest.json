@@ -1,6 +1,6 @@
 {
-  "name": "ポモドーロタイマー",
-  "short_name": "ポモドーロ",
+  "name": "Noclock",
+  "short_name": "Noclock",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ポモドーロタイマー</title>
+<title>Noclock</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#e07a5f">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -279,13 +279,13 @@
     targetPlus.disabled = targetSessions >= MAX_TARGET || isRunning;
     totalTimeEl.textContent = formatTotalTime(totalStudySeconds);
     document.title = goalReached
-      ? '目標達成! - ポモドーロタイマー'
+      ? '目標達成! - Noclock'
       : `${formatTime(remaining)} - ${isBreak ? '休憩中' : '集中中'}`;
   }
 
   function notify(message) {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    new Notification('ポモドーロタイマー', { body: message });
+    new Notification('Noclock', { body: message });
   }
 
   function switchMode() {
