@@ -144,6 +144,27 @@
     color: #777;
   }
 
+  .total-highlight {
+    margin: 4px 0 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #eee;
+    font-size: clamp(13px, 3vw, 15px);
+    color: #888;
+  }
+
+  .total-highlight strong {
+    display: block;
+    font-family: Arial, sans-serif;
+    font-size: clamp(30px, 9vw, 42px);
+    font-weight: 900;
+    color: var(--focus-color);
+    margin-top: 2px;
+  }
+
+  body.break-mode .total-highlight strong {
+    color: var(--break-color);
+  }
+
   .target-btn {
     width: 32px;
     height: 32px;
@@ -174,6 +195,7 @@
 <body>
   <div class="card">
     <h1>ポモドーロタイマー</h1>
+    <div class="total-highlight">勉強時間の合計<strong id="totalTime">0分</strong></div>
     <div class="mode-label" id="modeLabel">集中時間</div>
     <div class="time" id="timeDisplay">25:00</div>
     <div class="controls">
@@ -202,9 +224,11 @@
   const targetValue = document.getElementById('targetValue');
   const targetMinus = document.getElementById('targetMinus');
   const targetPlus = document.getElementById('targetPlus');
+  const totalTimeEl = document.getElementById('totalTime');
 
   const MIN_TARGET = 1;
   const MAX_TARGET = 12;
+  const TOTAL_STORAGE_KEY = 'pomodoro_total_study_seconds';
 
   let remaining = FOCUS_SECONDS;
   let isBreak = false;
@@ -213,6 +237,14 @@
   let sessionCount = 0;
   let targetSessions = 4;
   let goalReached = false;
+  let totalStudySeconds = parseInt(localStorage.getItem(TOTAL_STORAGE_KEY), 10) || 0;
+
+  function formatTotalTime(totalSeconds) {
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours > 0 ? `${hours}時間${minutes}分` : `${minutes}分`;
+  }
 
   function formatTime(totalSeconds) {
     const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -231,6 +263,7 @@
     targetValue.textContent = targetSessions;
     targetMinus.disabled = targetSessions <= MIN_TARGET || isRunning;
     targetPlus.disabled = targetSessions >= MAX_TARGET || isRunning;
+    totalTimeEl.textContent = formatTotalTime(totalStudySeconds);
     document.title = goalReached
       ? '目標達成! - ポモドーロタイマー'
       : `${formatTime(remaining)} - ${isBreak ? '休憩中' : '集中中'}`;
@@ -259,6 +292,10 @@
 
   function tick() {
     remaining -= 1;
+    if (!isBreak) {
+      totalStudySeconds += 1;
+      localStorage.setItem(TOTAL_STORAGE_KEY, totalStudySeconds);
+    }
     if (remaining <= 0) {
       switchMode();
     }
