@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ポモドーロタイマー</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e07a5f">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -50,6 +54,12 @@
     width: 100%;
     text-align: center;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 4px;
   }
 
   h1 {
@@ -203,6 +213,7 @@
   <div class="page">
     <div class="total-highlight">勉強時間の合計<strong id="totalTime">0分</strong></div>
     <div class="card">
+    <img src="icons/icon-192.png" alt="" class="logo" width="64" height="64">
     <h1>ポモドーロタイマー</h1>
     <div class="mode-label" id="modeLabel">集中時間</div>
     <div class="time" id="timeDisplay">25:00</div>
@@ -353,6 +364,12 @@
   targetPlus.addEventListener('click', () => changeTarget(1));
 
   render();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
